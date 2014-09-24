@@ -83,9 +83,9 @@ nb_kernel_ElecEw_VdwLJ_GeomP1P1_VF_sse4_1_single
     real             scratch[4*DIM];
     __m128           tx,ty,tz,fscal,rcutoff,rcutoff2,jidxall;
     int              vdwioffset0;
-    __m128           ix0,iy0,iz0,fix0,fiy0,fiz0,iq0,isai0;
+    __m128           ix0,iy0,iz0,fix0,fiy0,fiz0,iq0,isai0,alphai0;
     int              vdwjidx0A,vdwjidx0B,vdwjidx0C,vdwjidx0D;
-    __m128           jx0,jy0,jz0,fjx0,fjy0,fjz0,jq0,isaj0;
+    __m128           jx0,jy0,jz0,fjx0,fjy0,fjz0,jq0,isaj0,alphaj0;
     __m128           dx00,dy00,dz00,rsq00,rinv00,rinvsq00,r00,qq00,c6_00,c12_00;
     __m128           velec,felec,velecsum,facel,crf,krf,krf2;
     real             *charge;
@@ -104,7 +104,6 @@ nb_kernel_ElecEw_VdwLJ_GeomP1P1_VF_sse4_1_single
     __m128           two     = _mm_set1_ps(2.0);
     x                = xx[0];
     f                = ff[0];
-
     nri              = nlist->nri;
     iinr             = nlist->iinr;
     jindex           = nlist->jindex;
@@ -444,9 +443,9 @@ nb_kernel_ElecEw_VdwLJ_GeomP1P1_F_sse4_1_single
     real             scratch[4*DIM];
     __m128           tx,ty,tz,fscal,rcutoff,rcutoff2,jidxall;
     int              vdwioffset0;
-    __m128           ix0,iy0,iz0,fix0,fiy0,fiz0,iq0,isai0;
+    __m128           ix0,iy0,iz0,fix0,fiy0,fiz0,iq0,isai0,alphai0;
     int              vdwjidx0A,vdwjidx0B,vdwjidx0C,vdwjidx0D;
-    __m128           jx0,jy0,jz0,fjx0,fjy0,fjz0,jq0,isaj0;
+    __m128           jx0,jy0,jz0,fjx0,fjy0,fjz0,jq0,isaj0,alphaj0;
     __m128           dx00,dy00,dz00,rsq00,rinv00,rinvsq00,r00,qq00,c6_00,c12_00;
     __m128           velec,felec,velecsum,facel,crf,krf,krf2;
     real             *charge;
@@ -465,7 +464,6 @@ nb_kernel_ElecEw_VdwLJ_GeomP1P1_F_sse4_1_single
     __m128           two     = _mm_set1_ps(2.0);
     x                = xx[0];
     f                = ff[0];
-
     nri              = nlist->nri;
     iinr             = nlist->iinr;
     jindex           = nlist->jindex;

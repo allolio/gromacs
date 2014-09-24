@@ -160,6 +160,7 @@ nb_kernel_list_findkernel(FILE gmx_unused *   log,
     kernelinfo_ptr = NULL;
     while ( (i = kernel_list_hash[index]) != -1)
     {
+
         if (!gmx_strcasecmp_min(kernel_list[i].architecture, arch) &&
             !gmx_strcasecmp_min(kernel_list[i].electrostatics, electrostatics) &&
             !gmx_strcasecmp_min(kernel_list[i].electrostatics_modifier, electrostatics_modifier) &&

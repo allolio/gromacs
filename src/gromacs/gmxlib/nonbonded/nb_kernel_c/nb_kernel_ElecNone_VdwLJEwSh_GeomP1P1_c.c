@@ -70,9 +70,9 @@ nb_kernel_ElecNone_VdwLJEwSh_GeomP1P1_VF_c
     int              *iinr,*jindex,*jjnr,*shiftidx,*gid;
     real             *shiftvec,*fshift,*x,*f;
     int              vdwioffset0;
-    real             ix0,iy0,iz0,fix0,fiy0,fiz0,iq0,isai0;
+    real             ix0,iy0,iz0,fix0,fiy0,fiz0,iq0,isai0,alphai0;
     int              vdwjidx0;
-    real             jx0,jy0,jz0,fjx0,fjy0,fjz0,jq0,isaj0;
+    real             jx0,jy0,jz0,fjx0,fjy0,fjz0,jq0,isaj0,alphaj0;
     real             dx00,dy00,dz00,rsq00,rinv00,rinvsq00,r00,qq00,c6_00,c12_00,cexp1_00,cexp2_00;
     int              nvdwtype;
     real             rinvsix,rvdw,vvdw,vvdw6,vvdw12,fvdw,fvdw6,fvdw12,vvdwsum,br,vvdwexp,sh_vdw_invrcut6;
@@ -81,7 +81,6 @@ nb_kernel_ElecNone_VdwLJEwSh_GeomP1P1_VF_c
     real             c6grid_00;
     real             ewclj,ewclj2,ewclj6,ewcljrsq,poly,exponent,sh_lj_ewald;
     real	     *vdwgridparam;
-
     x                = xx[0];
     f                = ff[0];
 
@@ -268,9 +267,9 @@ nb_kernel_ElecNone_VdwLJEwSh_GeomP1P1_F_c
     int              *iinr,*jindex,*jjnr,*shiftidx,*gid;
     real             *shiftvec,*fshift,*x,*f;
     int              vdwioffset0;
-    real             ix0,iy0,iz0,fix0,fiy0,fiz0,iq0,isai0;
+    real             ix0,iy0,iz0,fix0,fiy0,fiz0,iq0,isai0,alphai0;
     int              vdwjidx0;
-    real             jx0,jy0,jz0,fjx0,fjy0,fjz0,jq0,isaj0;
+    real             jx0,jy0,jz0,fjx0,fjy0,fjz0,jq0,isaj0,alphaj0;
     real             dx00,dy00,dz00,rsq00,rinv00,rinvsq00,r00,qq00,c6_00,c12_00,cexp1_00,cexp2_00;
     int              nvdwtype;
     real             rinvsix,rvdw,vvdw,vvdw6,vvdw12,fvdw,fvdw6,fvdw12,vvdwsum,br,vvdwexp,sh_vdw_invrcut6;
@@ -279,7 +278,6 @@ nb_kernel_ElecNone_VdwLJEwSh_GeomP1P1_F_c
     real             c6grid_00;
     real             ewclj,ewclj2,ewclj6,ewcljrsq,poly,exponent,sh_lj_ewald;
     real	     *vdwgridparam;
-
     x                = xx[0];
     f                = ff[0];
 

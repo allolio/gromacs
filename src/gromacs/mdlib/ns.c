@@ -154,7 +154,6 @@ static void init_nblist(FILE *log, t_nblist *nl_sr, t_nblist *nl_lr,
         nl->ielecmod    = ielecmod;
         nl->type        = type;
         nl->igeometry   = igeometry;
-
         if (nl->type == GMX_NBLIST_INTERACTION_FREE_ENERGY)
         {
             nl->igeometry  = GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE;
@@ -255,7 +254,7 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
         igeometry_w  = GMX_NBLIST_GEOMETRY_WATER4_PARTICLE;
         igeometry_ww = GMX_NBLIST_GEOMETRY_WATER4_WATER4;
     }
-    else
+    else  
     {
         igeometry_w  = GMX_NBLIST_GEOMETRY_WATER3_PARTICLE;
         igeometry_ww = GMX_NBLIST_GEOMETRY_WATER3_WATER3;

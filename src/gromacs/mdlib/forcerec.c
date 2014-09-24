@@ -315,7 +315,7 @@ check_solvent_cg(const gmx_moltype_t    *molt,
                 *molt->name, nj);
     }
 
-    /* Check if it could be an SPC (3 atoms) or TIP4p (4) water,
+    /* Check if it could be an SPC (3 atoms), TIP4p (4) water,
      * otherwise skip it.
      */
     if (nj < 3 || nj > 4)
@@ -374,9 +374,10 @@ check_solvent_cg(const gmx_moltype_t    *molt,
         match = TRUE;
 
 
-        /* We can only match SPC with 3 atoms and TIP4p with 4 atoms */
+        /* We can only match SPC with 3 atoms,  TIP4p with 4 atoms */
         if ( (solvent_parameters[k].model == esolSPC   && nj != 3)  ||
-             (solvent_parameters[k].model == esolTIP4P && nj != 4) )
+             (solvent_parameters[k].model == esolTIP4P && nj != 4)  
+           )
         {
             match = FALSE;
         }
@@ -572,7 +573,6 @@ check_solvent(FILE  *                fp,
             bestsp = i;
         }
     }
-
     if (bestsp >= 0)
     {
         bestsol = solvent_parameters[bestsp].model;
@@ -2619,6 +2619,9 @@ void init_forcerec(FILE              *fp,
         case eelPME:
         case eelEWALD:
             fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_EWALD;
+ 	    break;
+        case eelPMEG:
+            fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_EWALD_GAUSSIAN;
             break;
 
         default:
@@ -2678,6 +2681,7 @@ void init_forcerec(FILE              *fp,
                            fr->eeltype == eelEWALD ||
                            fr->eeltype == eelPME ||
                            fr->eeltype == eelRF ||
+                           fr->eeltype == eelPMEG ||
                            fr->eeltype == eelRF_ZERO);
 
         /* If the user absolutely wants different switch/shift settings for coul/vdw, it is likely
