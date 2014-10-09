@@ -35,7 +35,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 #include "gmxpre.h"
-
+//#include <sys/time.h>
 #include "gromacs/legacyheaders/shellfc.h"
 
 #include <stdlib.h>
@@ -62,16 +62,28 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+#define ASPC_PREDICTOR
+#define ASPC_CORRECTOR
+
+#ifdef ASPC_PREDICTOR
+static long int pasteps=0;
+#else 
+static long int pasteps=0;
+#endif
+
 typedef struct {
     int     nnucl;
     atom_id shell;               /* The shell id				*/
     atom_id nucl1, nucl2, nucl3; /* The nuclei connected to the shell	*/
     /* gmx_bool    bInterCG; */       /* Coupled to nuclei outside cg?        */
     real    k;                   /* force constant		        */
+    rvec    step;
     real    k_1;                 /* 1 over force constant		*/
     rvec    xold;
     rvec    fold;
-    rvec    step;
+#ifdef ASPC_PREDICTOR
+    rvec   dxold[5]; 
+#endif
 } t_shell;
 
 typedef struct gmx_shellfc {
@@ -122,9 +134,30 @@ static void pr_shell(FILE *fplog, int ns, t_shell s[])
     }
 }
 
+#ifdef ASPC_PREDICTOR
+static void store_last_shell_pos(rvec x[], rvec v[], int ns, t_shell s[], int ePBC, matrix box)
+{
+    int i,j,m;
+    rvec dx;
+    t_pbc pbc;
+    set_pbc(&pbc, ePBC, box);
+    for (i = 0; (i < ns); i++)
+    {
+        for(j=4; j>0; j--)
+            for(m=0; m<DIM; m++)
+                s[i].dxold[j][m]=s[i].dxold[j-1][m];
+
+        pbc_dx(&pbc, x[s[i].shell], x[s[i].nucl1],s[i].dxold[0]);
+     // for(m=0;m<DIM;m++)
+     //  s[i].dxold[0][m] = v[s[i].nucl1][m];
+    }
+}
+#endif
+
 static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
                            int ns, t_shell s[],
                            real mass[], gmx_mtop_t *mtop, gmx_bool bInit)
+#ifndef ASPC_PREDICTOR
 {
     int                   i, m, s1, n1, n2, n3;
     real                  dt_1, dt_2, dt_3, fudge, tm, m1, m2, m3;
@@ -229,7 +262,55 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
     {
         gmx_mtop_atomlookup_destroy(alook);
     }
+    pasteps++;
 }
+#else
+{
+    int i, s1, m;
+    for (i = 0; (i < ns); i++)
+    {
+        s1 = s[i].shell;
+        if (bInit && pasteps==0) 
+        {	
+           
+        } 
+        else 
+        {
+            switch(pasteps)
+            {
+            case 1: 
+                for (m = 0; (m < DIM); m++)
+	//	    	    x[s1][m] += s[i].dxold[0][m] * dt ;
+                    x[s1][m] = x[s[i].nucl1][m] +  s[i].dxold[0][m] ;
+                break;
+            case 2: 
+                for (m = 0; (m < DIM); m++)
+	//	    	    x[s1][m] += 2.*s[i].dxold[0][m]*dt - s[i].dxold[1][m]*dt ;
+                    x[s1][m] = x[s[i].nucl1][m] + 2.*s[i].dxold[0][m] - s[i].dxold[1][m] ;
+                break;
+            case 3: 
+                for (m = 0; (m < DIM); m++)
+	//	    	    x[s1][m] +=2.5*s[i].dxold[0][m]*dt - 2.*s[i].dxold[1][m]*dt +0.5 * s[i].dxold[2][m]*dt;
+                    x[s1][m] =x[s[i].nucl1][m] + 2.5*s[i].dxold[0][m] - 2.*s[i].dxold[1][m] +0.5 * s[i].dxold[2][m];
+                break;
+            case 4: 
+                for (m = 0; (m < DIM); m++)
+	//	    	    x[s1][m] += 2.8*s[i].dxold[0][m]*dt - 2.8*s[i].dxold[1][m]*dt +1.2 * s[i].dxold[2][m]*dt -0.2*s[i].dxold[3][m]*dt;
+                    x[s1][m] =x[s[i].nucl1][m] +  2.8*s[i].dxold[0][m] - 2.8*s[i].dxold[1][m] +1.2 * s[i].dxold[2][m] -0.2*s[i].dxold[3][m];
+                break;
+            case 5:
+			default:
+                for (m = 0; (m < DIM); m++)
+	//	    	    x[s1][m] += 3.0*s[i].dxold[0][m]*dt - (24./7.)*s[i].dxold[1][m]*dt +(27./14.)* s[i].dxold[2][m]*dt - (4./7.)*s[i].dxold[3][m]*dt + (1./14.) * s[i].dxold[4][m]*dt;
+                    x[s1][m] =x[s[i].nucl1][m] +  3.0*s[i].dxold[0][m] - (24./7.)*s[i].dxold[1][m] +(27./14.)* s[i].dxold[2][m] - (4./7.)*s[i].dxold[3][m] + (1./14.) * s[i].dxold[4][m];
+                break;
+            }
+        }
+    }
+    pasteps++;
+}
+#endif
+
 
 gmx_shellfc_t init_shell_flexcon(FILE *fplog,
                                  gmx_mtop_t *mtop, int nflexcon,
@@ -656,6 +737,34 @@ static void directional_sd(rvec xold[], rvec xnew[], rvec acc_dir[],
     }
 }
 
+#ifdef ASPC_CORRECTOR
+static void shell_pos_aspc(rvec xcur[], rvec xnew[], rvec f[],
+                            int ns, t_shell s[], int count,real factor)
+{
+    int  i, shell;
+
+ 
+    for (i = 0; (i < ns); i++)
+    {
+        shell = s[i].shell;
+        copy_rvec(xcur[shell], s[i].xold);  // do not necessary
+        copy_rvec(f[shell], s[i].fold);     // do not necessary
+        
+        factor = (count == 1) ? factor : 0.9;
+        do_1pos(xnew[shell], xcur[shell], f[shell], factor* s[i].k_1);
+
+        if (gmx_debug_at)
+        {
+            fprintf(debug, "shell[%d] = %d\n", i, shell);
+            pr_rvec(debug, 0, "fshell", f[shell], DIM, TRUE);
+            pr_rvec(debug, 0, "xold", xcur[shell], DIM, TRUE);
+            pr_rvec(debug, 0, "step", s[i].step, DIM, TRUE);
+            pr_rvec(debug, 0, "xnew", xnew[shell], DIM, TRUE);
+        }
+    }
+}
+#endif
+
 static void shell_pos_sd(rvec xcur[], rvec xnew[], rvec f[],
                          int ns, t_shell s[], int count)
 {
@@ -952,8 +1061,18 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     int        nat, dd_ac0, dd_ac1 = 0, i;
     int        start = 0, homenr = md->homenr, end = start+homenr, cg0, cg1;
     int        nflexcon, g, number_steps, d, Min = 0, count = 0;
+    int        ASPC_AVG=20;
+#ifdef ASPC_PREDICTOR
+	static real aspc_best_factor;
+	static real aspc_factor=0.56;
+	static real aspc_performance;
+	static real aspc_best_performance=1e20;
+	static gmx_bool bAspcOptimized=0;
+#endif
+//struct timeval tv;
+//struct timezone tz;
 #define  Try (1-Min)             /* At start Try = 1 */
-
+//gettimeofday(&tv, &tz);
     bCont        = (mdstep == inputrec->init_step) && inputrec->bContinuation;
     bInit        = (mdstep == inputrec->init_step) || shfc->bRequireInit;
     ftol         = inputrec->em_tol;
@@ -1045,7 +1164,9 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     }
 
     /* Do a prediction of the shell positions */
+#ifndef ASPC_PREDICTOR
     if (shfc->bPredict && !bCont)
+#endif
     {
         predict_shells(fplog, state->x, state->v, inputrec->delta_t, nshell, shell,
                        md->massT, NULL, bInit);
@@ -1144,13 +1265,16 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                       constr, idef, inputrec, cr, dd_ac1, mdstep, md, start, end,
                       x_old-start, state->x, pos[Min], force[Min], acc_dir-start,
                       fr->bMolPBC, state->box, state->lambda, &dum, nrnb);
-
             directional_sd(pos[Min], pos[Try], acc_dir-start, start, end,
                            fr->fc_stepsize);
         }
 
         /* New positions, Steepest descent */
+#ifndef ASPC_CORRECTOR
         shell_pos_sd(pos[Min], pos[Try], force[Min], nshell, shell, count);
+#else
+        shell_pos_aspc(pos[Min], pos[Try], force[Min], nshell, shell, count,aspc_factor);
+#endif
 
         /* do_force expected the charge groups to be in the box */
         if (graph)
@@ -1244,6 +1368,31 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
             decrease_step_size(nshell, shell);
         }
     }
+#ifdef ASPC_PREDICTOR
+	if(!bAspcOptimized){
+		if(pasteps % ASPC_AVG ==0){
+			if(pasteps!=0) {
+				if(aspc_performance<aspc_best_performance) {
+				   aspc_best_performance = aspc_performance;
+			       aspc_best_factor = aspc_factor;
+				}
+				aspc_factor += 0.01;
+				if(aspc_factor>0.95) {
+                   aspc_factor = aspc_best_factor;
+                   bAspcOptimized=1;				   
+				}
+    
+			}
+			aspc_performance = 0.0;
+		} 
+		aspc_performance+=(count+df[Min]/ftol)/ASPC_AVG;
+	}
+// if(pasteps % ASPC_AVG == ASPC_AVG-1)printf("nstep = %d  accuracy = %g factor = %g  best factor = %g perf = %g best = %g\n",count,df[Try],aspc_factor, aspc_best_factor,aspc_performance,aspc_best_performance);
+//if(bAspcOptimized && pasteps % ASPC_AVG == ASPC_AVG-1) printf("TIME  %d %d \n", tv.tv_sec, tv.tv_usec);
+#else
+// if(pasteps % ASPC_AVG == ASPC_AVG-1)printf("nstep = %d  accuracy = %g \n",count,df[Try]);
+//if(pasteps % ASPC_AVG == ASPC_AVG-1) printf("TIME  %d %d \n", tv.tv_sec, tv.tv_usec);
+#endif
     if (MASTER(cr) && !(*bConverged))
     {
         /* Note that the energies and virial are incorrect when not converged */
@@ -1261,6 +1410,9 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     /* Copy back the coordinates and the forces */
     memcpy(state->x, pos[Min], nat*sizeof(state->x[0]));
     memcpy(f, force[Min], nat*sizeof(f[0]));
+#ifdef ASPC_PREDICTOR
+    store_last_shell_pos(state->x, state->v, nshell, shell, inputrec->ePBC,state->box);
+#endif
 
     return count;
 }
