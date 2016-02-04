@@ -2,27 +2,62 @@
 <html lang="en-us">
   <head>
     <meta charset="UTF-8">
-    <title>Gromacs Gaussian charges by Marcello-Sega</title>
+    <title>Gromacs: Gaussian Charges and Local Pressure versions by Marcello-Sega</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
     <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
     <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
     <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+    <style>
+          table { border-collapse: collapse;margin-left:auto;  margin-right:auto; }
+          td    { text-align:right;padding:1em; } 
+          @media only screen and (max-width: 500px) {
+          td    { display:block;text-align:center; padding:2px;}
+          }
+	  li    {margin: 0 0 0.5em 0;}
+
+    </style>
+
   </head>
   <body>
     <section class="page-header">
-      <h1 class="project-name">Gromacs Gaussian charges</h1>
-      <h2 class="project-tagline">Gromacs with Gaussian charge distributions</h2>
-      <a href="https://github.com/Marcello-Sega/gromacs" class="btn">View on GitHub</a>
-      <a href="https://github.com/Marcello-Sega/gromacs/zipball/master" class="btn">Download .zip</a>
-      <a href="https://github.com/Marcello-Sega/gromacs/tarball/master" class="btn">Download .tar.gz</a>
+      <h1 class="project-name">Marcello Sega - Gromacs Development Versions</h1>
+      <h2 class="project-tagline">Gaussian Charge Distributions & Local Pressure</h2>
+      <table>
+        <tr>
+          <td> Gaussian Charges:  </td>
+          <td>
+     		<a href="https://github.com/Marcello-Sega/gromacs/tree/GAUSSIAN" class="btn">View on GitHub</a>
+      		<a href="https://github.com/Marcello-Sega/gromacs/tarball/GAUSSIAN" class="btn">Download .tar.gz</a> 
+   	  </td>
+        </tr>
+        <tr>
+          <td>Local Pressure:</td>
+          <td>
+      		<a href="https://github.com/Marcello-Sega/gromacs/tree/virial" class="btn">View on GitHub</a>
+      		<a href="https://github.com/Marcello-Sega/gromacs/tarball/virial" class="btn">Download .tar.gz</a> 
+	  </td>
+        </tr>
+      </table>
     </section>
 
     <section class="main-content">
       <h3>
 <a id="welcome-to-the-github-page-of-my-gromacs-fork" class="anchor" href="#welcome-to-the-github-page-of-my-gromacs-fork" aria-hidden="true"><span class="octicon octicon-link"></span></a>Welcome to the GitHub Page of my Gromacs fork.</h3>
+<p>In this repository you can find two of my development branches, namely:
+<ul>
+  <li>The <a href="https://github.com/Marcello-Sega/gromacs/tree/GAUSSIAN">branch <tt>GAUSSIAN</tt></a> that implements Gaussian charges (instead of point-like ones), as published in <a href="http://dx.doi.org/10.1021/ct5009069">J. Chem. Theory Comput., 2014, 10 (12), pp 5513–5519</a> </li>
+  <li>The <a href="https://github.com/Marcello-Sega/gromacs/tree/virial">branch <tt>virial</tt></a> that implements the local (per-particle) pressure calculation, including PME long range corretions, using the Harasima path. A pre-print about this method will be available as soon as possible </li>
+</ul>
 
-<p>The master branch in this fork implements Gaussian charges (instead of point-like ones), as published in <a href="http://dx.doi.org/10.1021/ct5009069">J. Chem. Theory Comput., 2014, 10 (12), pp 5513–5519</a></p>
+NOTES: 
+<ul>
+<li>for both branches, only the <tt>cutoff-scheme = group </tt>, single-core, single-thread version is implemented </li>
+<li>For the branch <tt>virial</tt>, only the c-kernels are available, thus one should <tt>export GMX_DISABLE_SIMD_KERNELS=1</tt> before launching <tt>mdrun</tt></li> 
+<li>The interactions which are so far taken into account in the local pressure calculation are Lennard-Jones, Coulomb (short + long range PME contribution) and constraints (shake, lincs). I will implement the bonded interactions (bonds, angles, torsions as soon as possible</li>
+<li>If you are interested in porting or helping me porting this development version to the multithreaded/MPI or verlet-list versions, or to implement the the bonded interactions, don't hesitate to contact me </li>
+</ul>
+
 
 <h3>
 <a id="go-back-to-my-homepage-on-github" class="anchor" href="#go-back-to-my-homepage-on-github" aria-hidden="true"><span class="octicon octicon-link"></span></a>Go back to <a href="http://marcello-sega.github.io/">my Homepage on GitHub</a>
