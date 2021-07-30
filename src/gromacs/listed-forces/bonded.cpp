@@ -71,6 +71,11 @@
 rvec * global_vir = NULL;
 real * global_pener = NULL;
 
+/* Debug factos */
+double facd=1.0;
+double faca=1.0;
+/**/
+
 /*! \brief Mysterious CMAP coefficient matrix */
 const int cmap_coeff_matrix[] = {
     1, 0, -3,  2, 0, 0,  0,  0, -3,  0,  9, -6,  2,  0, -6,  4,
@@ -1026,18 +1031,30 @@ real angles(int nbonds,
                 f_j[m]    = -f_i[m] - f_k[m];
                 f[ai][m] += f_i[m];
                 f[aj][m] += f_j[m];
-                f[ak][m] += f_k[m];
+                f[ak][m] += f_k[m];}
+      /* begin stress tensor */
+      rvec Ri, Rj, Rk, dx,Fij,Fik,Fjk;
                 if (vir != NULL) {
-                    /* Summing up the virial pairwise */
-                    // k-i
-                    vir[ai][m] += 0.5*(1e25/AVOGADRO) * cik * r_ki[m] * r_ki[m];
-                    vir[ak][m] += 0.5*(1e25/AVOGADRO) * cik * r_ki[m] * r_ki[m];
-                    // j-i
-                    vir[aj][m] += 0.5*(1e25/AVOGADRO) * (cii-cik)* r_ij[m] * r_ij[m];
-                    vir[ai][m] += 0.5*(1e25/AVOGADRO) * (cii-cik)* r_ij[m] * r_ij[m];
-                    // j-k
-                    vir[aj][m] += 0.5*(1e25/AVOGADRO) * (ckk-cik)* r_kj[m] * r_kj[m];
-                    vir[ak][m] += 0.5*(1e25/AVOGADRO) * (ckk-cik)* r_kj[m] * r_kj[m];
+//printf("ANGLES\n");
+      copy_rvec(x[ai], Ri);
+      pbc_rvec_sub(pbc, x[aj], x[ai], dx);
+      rvec_add(x[ai], dx, Rj);
+      pbc_rvec_sub(pbc, x[ak], x[ai], dx);
+      rvec_add(x[ai], dx, Rk);
+        Fij[0] = (f_i[XX]-f_j[XX])/3.0; Fij[1] = (f_i[YY]-f_j[YY])/3.0; Fij[2] = (f_i[ZZ]-f_j[ZZ])/3.0;
+        Fik[0] = (f_i[XX]-f_k[XX])/3.0; Fik[1] = (f_i[YY]-f_k[YY])/3.0; Fik[2] = (f_i[ZZ]-f_k[ZZ])/3.0;
+        Fjk[0] = (f_j[XX]-f_k[XX])/3.0; Fjk[1] = (f_j[YY]-f_k[YY])/3.0; Fjk[2] = (f_j[ZZ]-f_k[ZZ])/3.0;
+        for (m = 0; m < DIM; m++)
+            {  
+                   // k-i
+                    vir[ai][m] += faca*0.5*(1e25/AVOGADRO) * Fik[m] * -r_ki[m];
+                    vir[ak][m] += faca*0.5*(1e25/AVOGADRO) * Fik[m] * -r_ki[m];
+                    // j+i
+                    vir[aj][m] += faca*0.5*(1e25/AVOGADRO) * Fij[m] * r_ij[m];
+                    vir[ai][m] += faca*0.5*(1e25/AVOGADRO) * Fij[m] * r_ij[m];
+                    // j+k
+                    vir[aj][m] += faca*0.5*(1e25/AVOGADRO) * Fjk[m]*  -r_kj[m];
+                    vir[ak][m] += faca*0.5*(1e25/AVOGADRO) * Fjk[m]*  -r_kj[m];
                 }
             }
             if (g != NULL)
@@ -1363,30 +1380,40 @@ real urey_bradley(int nbonds,
             cii = sth/nrij2;                   /*  10		*/
             ckk = sth/nrkj2;                   /*  10		*/
 
+      rvec Ri, Rj, Rk, dx,Fij,Fik,Fjk;
             rvec_sub (r_kj, r_ij, r_ki);    /* construct r_ki for virial*/
-
-            for (m = 0; (m < DIM); m++)        /*  39		*/
-            {
-                f_i[m]    = -(cik*r_kj[m]-cii*r_ij[m]);
-                f_k[m]    = -(cik*r_ij[m]-ckk*r_kj[m]);
-                f_j[m]    = -f_i[m]-f_k[m];
+   copy_rvec(x[ai], Ri);
+      pbc_rvec_sub(pbc, x[aj], x[ai], dx);
+      rvec_add(x[ai], dx, Rj);
+      pbc_rvec_sub(pbc, x[ak], x[ai], dx);
+      rvec_add(x[ai], dx, Rk);
+            for (m = 0; m < DIM; m++)
+            {           /*  39          */
+                f_i[m]    = -(cik*r_kj[m] - cii*r_ij[m]);
+                f_k[m]    = -(cik*r_ij[m] - ckk*r_kj[m]);
+                f_j[m]    = -f_i[m] - f_k[m];
                 f[ai][m] += f_i[m];
                 f[aj][m] += f_j[m];
-                f[ak][m] += f_k[m];
-                if (vir != NULL) {
-                    /* Summing up the virial pairwise */
+                f[ak][m] += f_k[m];}
+if(vir!=0)
+{
+        Fij[0] = (f_i[XX]-f_j[XX])/3.0; Fij[1] = (f_i[YY]-f_j[YY])/3.0; Fij[2] = (f_i[ZZ]-f_j[ZZ])/3.0;
+        Fik[0] = (f_i[XX]-f_k[XX])/3.0; Fik[1] = (f_i[YY]-f_k[YY])/3.0; Fik[2] = (f_i[ZZ]-f_k[ZZ])/3.0;
+        Fjk[0] = (f_j[XX]-f_k[XX])/3.0; Fjk[1] = (f_j[YY]-f_k[YY])/3.0; Fjk[2] = (f_j[ZZ]-f_k[ZZ])/3.0;
+        for (m = 0; m < DIM; m++)
+            {
                     // k-i
-                    vir[ai][m] += 0.5*(1e25/AVOGADRO) * cik * r_ki[m] * r_ki[m];
-                    vir[ak][m] += 0.5*(1e25/AVOGADRO) * cik * r_ki[m] * r_ki[m];
+                    vir[ai][m] += faca*0.5*(1e25/AVOGADRO) * Fik[m] * -r_ki[m];
+                    vir[ak][m] += faca*0.5*(1e25/AVOGADRO) * Fik[m] * -r_ki[m];
                     // j-i
-                    vir[aj][m] += 0.5*(1e25/AVOGADRO) * (cii-cik)* r_ij[m] * r_ij[m];
-                    vir[ai][m] += 0.5*(1e25/AVOGADRO) * (cii-cik)* r_ij[m] * r_ij[m];
+                    vir[aj][m] += faca*0.5*(1e25/AVOGADRO) * Fij[m] * r_ij[m];
+                    vir[ai][m] += faca*0.5*(1e25/AVOGADRO) * Fij[m] * r_ij[m];
                     // j-k
-                    vir[aj][m] += 0.5*(1e25/AVOGADRO) * (ckk-cik)* r_kj[m] * r_kj[m];
-                    vir[ak][m] += 0.5*(1e25/AVOGADRO) * (ckk-cik)* r_kj[m] * r_kj[m];
+                    vir[aj][m] += faca*0.5*(1e25/AVOGADRO) * Fjk[m]*  -r_kj[m];
+                    vir[ak][m] += faca*0.5*(1e25/AVOGADRO) * Fjk[m]*  -r_kj[m];
                 }
-
             }
+
             if (g)
             {
                 copy_ivec(SHIFT_IVEC(g, aj), jt);
@@ -1720,73 +1747,77 @@ void do_dih_fup(int i, int j, int k, int l, int type, real ddphi, real phi,
 
         if (vir != NULL) {
 
-             /* Central Force Decomposition (CDF) */
-            rvec t, tt, ttt;                     // temporary storage
-            rvec r_il, r_ik, r_lj;               // missing vectors between particles
-            rvec vkj;                            // versors
-            rvec pij, pkl;                       // projections
-            rvec vpij, vpkl;                     // versors of projections
-            real npij2, npij_1, npkl2, npkl_1;   // powers of norms
-            real ialpha, ibeta, igamma;          // decomposition on i
-            real lalpha, lbeta, lgamma;          // decomposition on l
-            real fac, ia, ia2;                   // mutliplicative factor for forces
-            real fij, fik, fil, fkj, flj, fkl;   // decomposition coefficients
-            int msign, fkjsign, Fsign;
-            msign = (phi > 0) ? 1 : -1;          // sign correction because of angle definiton
-            Fsign = (ddphi > 0) ? -1 : 1;        // sign correction of fkj because of signed force ddphi
-            int idihsign = (type == 0) ? 1 : -1; // improper dihedrals have one flip of sign
-            fkjsign = Fsign * msign * idihsign;
+        /* begin stress tensor */
+        rvec Ri, Rj, Rk, Rl, dx;
+        rvec r_il, r_ik, r_lj;               // missing vectors between particles
 
-            rvec_sub(r_ij,r_kj,r_ik);
+        rvec Fj, Fk;
+                //gmxLS_spread_n4(grid, F[0], F[1], F[2], F[3], R[0], R[1], R[2], R[3]);
+
+        int  lpatIDs[4];
+
+        copy_rvec(x[i], Ri);
+        pbc_rvec_sub(pbc, x[j], x[i], dx);
+        rvec_add(Ri, dx, Rj);
+        pbc_rvec_sub(pbc, x[k], x[i], dx);
+        rvec_add(Ri, dx, Rk);
+        pbc_rvec_sub(pbc, x[l], x[i], dx);
+        rvec_add(Ri, dx, Rl);
+        /* fj and fk need to be inverted */
+        svmul(-1.0, f_j, Fj);
+        svmul(-1.0, f_k, Fk);
+             rvec_sub(r_ij,r_kj,r_ik);
             rvec_add(r_kl,r_ik,r_il);
             rvec_sub(r_kj,r_kl,r_lj);
-             // p_ij
-            svmul(nrkj_1, r_kj,vkj);
-            svmul(iprod(r_ij, vkj), vkj, t);
-            rvec_sub(r_ij, t, pij);
-             // p_kl
-            svmul(iprod(r_kl, vkj), vkj, t);
-            rvec_sub(r_kl, t, pkl);
-             // vp_ij
-            npij2  = iprod(pij, pij);
-            npij_1 = gmx_invsqrt (npij2);
-            svmul (npij_1, pij, vpij);
-             // vp_kl
-            npkl2  = iprod(pkl, pkl);
-            npkl_1 = gmx_invsqrt (npkl2);
-            svmul (npkl_1, pkl, vpkl);
 
-            ia2 = iprod(pkl,pkl) - iprod(pkl,vpij)*iprod(pkl,vpij);
-            if (ia2 < GMX_REAL_EPS) { ia2 = GMX_REAL_EPS; }
-            ia = sqrt(ia2);
-
-            ialpha = iprod(r_kl,vkj)*nrkj_1;
-            ibeta  = iprod(pkl,vpij)*npij_1;
-            igamma = iprod(r_ij,vkj)*nrkj_1;
-
-            lalpha = igamma;
-            lbeta  = iprod(pij,vpkl)*npkl_1;
-            lgamma = ialpha;
-
-            // force components
-            fac = msign * a*sqrt(iprm)/ia;
-            fij = fac * (ibeta*igamma - ibeta - ialpha);
-            fik = fac * (ialpha - ibeta*igamma - 1);
-            fil = fac;
-            flj = fac * (lalpha - lgamma*lbeta - 1);
-            fkl = fac * (lalpha +lbeta -lbeta*lgamma);
-
-            // calculating remaining term
-            // from f_j
-            svmul(fij,r_ij,t);
-            svmul(flj,r_lj,tt);
-            rvec_add(t,tt,ttt);
-            rvec_sub(ttt,f_j,t);
-            fkj = sqrt(iprod(t,t)) * nrkj_1 * fkjsign;
+        /* begin stress tensor */
+       // Ra=Ri;Rb=Rj;Rc=Rk;Rd=Rl;
+        lpatIDs[0] = i; lpatIDs[1] = j; lpatIDs[2] = k; lpatIDs[3] = l;
+ //rvec Fa,fj,Fc,Fd;//,Ra,Rb,Rc,Rd;
+//f_i=f_i; Fb=fj;Fk=Fk;Fd=f_l;
+        rvec Fij,Fik,Fil,Fjk,Fjl,Fkl;
+	 
+//        gmxLS_distribute_stress(locals_grid, 4, lpatIDs, lpR, lpF);
+        Fij[0] = (f_i[XX]-Fj[XX])/4.0; Fij[1] = (f_i[YY]-Fj[YY])/4.0; Fij[2] = (f_i[ZZ]-Fj[ZZ])/4.0;
+        //printf("%f %f %f \n",r_ij[0],r_ij[1],r_ij[2]);
+//        printf("%f %f %f \n",Fij[0],Fij[1],Fij[2]);
+        Fik[0] = (f_i[XX]-Fk[XX])/4.0; Fik[1] = (f_i[YY]-Fk[YY])/4.0; Fik[2] = (f_i[ZZ]-Fk[ZZ])/4.0;
+//        printf("%f %f %f \n",r_ik[0],r_ik[1],r_ik[2]);
+//        printf("%f %f %f \n",Fik[0],Fik[1],Fik[2]);
+        Fil[0] = (f_i[XX]-f_l[XX])/4.0; Fil[1] = (f_i[YY]-f_l[YY])/4.0; Fil[2] = (f_i[ZZ]-f_l[ZZ])/4.0;
+ //       printf("%f %f %f \n",r_il[0],r_il[1],r_il[2]);
+        //printf("%f %f %f \n",Fil[0],Fil[1],Fil[2]);
+        Fjk[0] = (Fj[XX]-Fk[XX])/4.0; Fjk[1] = (Fj[YY]-Fk[YY])/4.0; Fjk[2] = (Fj[ZZ]-Fk[ZZ])/4.0;
+        //printf("%f %f %f \n",r_kj[0],r_kj[1],r_kj[2]);
+        //printf(2"%f %f %f \n",Fjk[0],Fjk[1],Fjk[2]);
+        //printf("%f %f \n" , f_j[YY],f_l[YY]);
+        Fjl[0] = (Fj[XX]-f_l[XX])/4.0; Fjl[1] = (Fj[YY]-f_l[YY])/4.0; Fjl[2] = (Fj[ZZ]-f_l[ZZ])/4.0;
+//        printf("%f %f %f \n",r_lj[0],r_lj[1],r_lj[2]);
+ //       printf("%f %f %f \n",Fjl[0],Fjl[1],Fjl[2]);
+        Fkl[0] = (Fk[XX]-f_l[XX])/4.0; Fkl[1] = (Fk[YY]-f_l[YY])/4.0; Fkl[2] = (Fk[ZZ]-f_l[ZZ])/4.0;
+  //      printf("%f %f %f \n",r_kl[0],r_kl[1],r_kl[2]);
+   //     printf("%f %f %f \n",Fkl[0],Fkl[1],Fkl[2]);
+        /* end stress tensor */
 
             for (int m = 0; m < DIM; m++) {
                                           // already signed force * signed distance
-                vir[i][m] += 0.5*(1e25/AVOGADRO) *  fij * r_ij[m] *  r_ij[m];
+                vir[i][m] += facd*0.5*(1e25/AVOGADRO) *  Fij[m]* r_ij[m]; 
+                vir[i][m] += facd*0.5*(1e25/AVOGADRO) *  Fik[m] * r_ik[m];
+                vir[i][m] += facd*0.5*(1e25/AVOGADRO) *  Fil[m]  * r_il[m];
+
+                vir[j][m] += facd*0.5*(1e25/AVOGADRO) * Fij[m] * r_ij[m]; 
+                vir[j][m] += facd*0.5*(1e25/AVOGADRO) * Fjk[m] * -r_kj[m]; //-
+                vir[j][m] += facd*0.5*(1e25/AVOGADRO) * Fjl[m] * -r_lj[m];
+
+                vir[k][m] += facd*0.5*(1e25/AVOGADRO) * Fik[m] * r_ik[m]; 
+                vir[k][m] += facd*0.5*(1e25/AVOGADRO) * Fjk[m] * -r_kj[m]; //-
+                vir[k][m] += facd*0.5*(1e25/AVOGADRO) * Fkl[m] * r_kl[m]; // -
+
+                vir[l][m] += facd*0.5*(1e25/AVOGADRO) * Fil[m] * r_il[m] ;
+                vir[l][m] += facd*0.5*(1e25/AVOGADRO) * Fjl[m] * -r_lj[m]; //- 
+                vir[l][m] += facd*0.5*(1e25/AVOGADRO) * Fkl[m]  * r_kl[m];//-
+
+/*   vir[i][m] += 0.5*(1e25/AVOGADRO) *  fij * r_ij[m] *  r_ij[m];
                 vir[i][m] += 0.5*(1e25/AVOGADRO) *  fik * r_ik[m] *  r_ik[m];
                 vir[i][m] += 0.5*(1e25/AVOGADRO) *  fil * r_il[m] *  r_il[m];
 
@@ -1801,7 +1832,9 @@ void do_dih_fup(int i, int j, int k, int l, int type, real ddphi, real phi,
                 vir[l][m] += 0.5*(1e25/AVOGADRO) * -fil * r_il[m] * -r_il[m];
                 vir[l][m] += 0.5*(1e25/AVOGADRO) *  flj * r_lj[m] *  r_lj[m];
                 vir[l][m] += 0.5*(1e25/AVOGADRO) *  fkl * r_kl[m] * -r_kl[m];
-            }
+            
+*/
+}
         }
 
         if (g)
@@ -4022,6 +4055,31 @@ real tab_angles(int nbonds,
                         theta*RAD2DEG, va, dVdt);
             }
 #endif
+            nrkj2 = iprod(r_kj, r_kj);  /*   5		*/
+            nrij2 = iprod(r_ij, r_ij);
+
+            cik = st*gmx_invsqrt(nrkj2*nrij2); /*  12		*/
+            cii = sth/nrij2;                   /*  10		*/
+            ckk = sth/nrkj2;                   /*  10		*/
+
+            for (m = 0; (m < DIM); m++)        /*  39		*/
+            {
+                f_i[m]    = -(cik*r_kj[m]-cii*r_ij[m]);
+                f_k[m]    = -(cik*r_ij[m]-ckk*r_kj[m]);
+                f_j[m]    = -f_i[m]-f_k[m];
+                f[ai][m] += f_i[m];
+                f[aj][m] += f_j[m];
+                f[ak][m] += f_k[m];
+            }
+            if (g)
+            {
+                copy_ivec(SHIFT_IVEC(g, aj), jt);
+
+                ivec_sub(SHIFT_IVEC(g, ai), jt, dt_ij);
+                ivec_sub(SHIFT_IVEC(g, ak), jt, dt_kj);
+                t1 = IVEC2IS(dt_ij);
+                        //theta*RAD2DEG, va, dVdt);
+            }
             nrkj2 = iprod(r_kj, r_kj);  /*   5		*/
             nrij2 = iprod(r_ij, r_ij);
 
